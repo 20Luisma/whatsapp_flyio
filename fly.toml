@@ -1,0 +1,13 @@
+# fly.toml generado para WhatsApp Creawebes
+app = "whatsapp-creawebes"
+
+[env]
+  PORT = "3000"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 3000
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
