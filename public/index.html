@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Enviar WhatsApp a Todos</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #eaf3fb;
+      padding: 2rem;
+      color: #2c3e50;
+    }
+
+    h2 {
+      text-align: center;
+      color: #004080;
+    }
+
+    textarea, button, input {
+      width: 100%;
+      padding: 0.75rem;
+      margin-top: 1rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #99c2ff;
+    }
+
+    textarea:focus, input:focus {
+      border-color: #3399ff;
+      outline: none;
+    }
+
+    button {
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #004c99;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+    }
+
+    th, td {
+      padding: 0.75rem;
+      border: 1px solid #cce0ff;
+      text-align: left;
+    }
+
+    th {
+      background-color: #cce6ff;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #ffffff;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+
+    #resultado {
+      margin-top: 1rem;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .toast {
+      visibility: hidden;
+      min-width: 250px;
+      background-color: #007acc;
+      color: #fff;
+      text-align: center;
+      border-radius: 8px;
+      padding: 1rem;
+      position: fixed;
+      z-index: 1000;
+      right: 20px;
+      bottom: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      transition: visibility 0s, opacity 0.5s ease;
+      opacity: 0;
+    }
+
+    .toast.show {
+      visibility: visible;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Enviar WhatsApp Masivo</h2>
+
+    <label for="mensaje">Mensaje a enviar:</label>
+    <textarea id="mensaje" placeholder="Escribí tu mensaje..." rows="4"></textarea>
+
+    <label for="imagen">Adjuntar imagen (opcional):</label>
+    <input type="file" id="imagen" accept="image/*" />
+
+    <button onclick="enviarTodos()">Enviar a todos</button>
+
+    <div id="resultado"></div>
+
+    <table id="tabla">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Teléfono</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="toast" class="toast">📤 Mensajes enviados correctamente</div>
+
+  <script>
+    const tablaBody = document.querySelector('#tabla tbody');
+    let contactos = [];
+
+    async function cargarContactos() {
+      const res = await fetch('/contactos');
+      const data = await res.json();
+      contactos = data;
+
+      data.forEach(c => {
+        const fila = document.createElement('tr');
+        fila.innerHTML = `<td>${c.Nombre}</td><td>${c.Telefono}</td>`;
+        tablaBody.appendChild(fila);
+      });
+    }
+
+    function mostrarToast(mensaje) {
+      const toast = document.getElementById("toast");
+      toast.textContent = mensaje;
+      toast.className = "toast show";
+      setTimeout(() => {
+        toast.className = "toast";
+      }, 3000);
+    }
+
+    async function enviarTodos() {
+      const mensaje = document.getElementById('mensaje').value;
+      const imagenInput = document.getElementById('imagen');
+      const imagen = imagenInput.files[0];
+
+      if (!mensaje && !imagen) {
+        alert('Escribí un mensaje o adjuntá una imagen.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('mensaje', mensaje);
+      formData.append('contactos', JSON.stringify(contactos));
+      if (imagen) formData.append('imagen', imagen);
+
+      const res = await fetch('/enviar', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await res.json();
+      document.getElementById('resultado').textContent = data.status || 'Envío completado';
+      mostrarToast('📤 ' + (data.status || 'Mensajes enviados correctamente'));
+    }
+
+    cargarContactos();
+  </script>
+</body>
+</html>
+
+
