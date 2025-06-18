@@ -1,5 +1,5 @@
 const express = require('express');
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const csv = require('csv-parser');
 const multer = require('multer');
 const mime = require('mime-types');
@@ -7,10 +7,11 @@ const { Readable } = require('stream');
 const fs = require('fs');
 const path = require('path');
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
+const qrterminal = require('qrcode-terminal');
+const qrcode = require('qrcode');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1oTG-PaDx0qs4f8CkThL2pmAV90JacvViIWxIH0Vwsh0/export?format=csv';
 
@@ -48,9 +49,16 @@ const client = new Client({
   authStrategy: new LocalAuth()
 });
 
-client.on('qr', (qr) => {
+client.on('qr', async (qr) => {
   console.log('\n📱 Escaneá este código QR con tu WhatsApp:\n');
-  qrcode.generate(qr, { small: true });
+  qrterminal.generate(qr, { small: true });
+
+  try {
+    await qrcode.toFile('./public/qr.png', qr);
+    console.log('✅ QR generado como imagen en /qr.png');
+  } catch (err) {
+    console.error('❌ Error generando imagen QR:', err.message);
+  }
 });
 
 client.on('ready', () => {
@@ -77,29 +85,4 @@ app.post('/enviar', upload.single('imagen'), async (req, res) => {
           const mimeType = mime.lookup(req.file.originalname);
           const media = new MessageMedia(mimeType, base64Data, req.file.originalname);
 
-          console.log(`📎 Enviando imagen a ${Nombre} (${Telefono}) - tipo: ${mimeType}`);
-          await client.sendMessage(numero, media, { caption: mensaje || '' });
-        } else if (mensaje) {
-          await client.sendMessage(numero, mensaje);
-          console.log(`💬 Enviado mensaje a ${Nombre} (${Telefono})`);
-        }
-      } catch (err) {
-        console.error(`❌ Error enviando a ${Nombre}:`, err.message);
-      }
-    }
-
-    if (req.file) fs.unlinkSync(req.file.path); // limpiar archivo temporal
-
-    res.json({ status: 'Mensajes enviados correctamente' });
-  } catch (err) {
-    console.error('❌ Error al enviar:', err.message);
-    res.status(500).json({ status: 'Error al enviar mensajes' });
-  }
-});
-
-client.initialize();
-
-// Iniciar servidor
-app.listen(port, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${port}`);
-});
+          console.log(`📎 Enviando imagen a ${Nombre} (${Te
